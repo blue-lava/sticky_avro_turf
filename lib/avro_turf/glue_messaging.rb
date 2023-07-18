@@ -38,12 +38,12 @@ class AvroTurf
     )
       @schema_store = schema_store || SchemaStore.new(path: schemas_path || DEFAULT_SCHEMAS_PATH)
       @registry =
-        GlueSchemaRegistry.new(
+        AvroTurf::GlueSchemaRegistry.new(
           registry_name: registry_name,
+          region: region,
           access_key_id: access_key_id,
           secret_access_key: secret_access_key,
-          session_token: session_token,
-          region: region,
+          session_token: session_token
         )
       @schemas_by_id = {}
     end

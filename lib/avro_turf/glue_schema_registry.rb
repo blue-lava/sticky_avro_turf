@@ -12,15 +12,11 @@ class AvroTurf
       region: nil
     )
       @registry_name = registry_name
-      @client =
-        Aws::Glue::Client.new(
-          {
-            access_key_id: access_key_id,
-            secret_access_key: secret_access_key,
-            session_token: session_token,
-            region: region,
-          },
-        )
+      client_params = { region: region }
+      if access_key_id && secret_access_key && session_token
+        client_params[:credentials] = Aws::Credentials.new(access_key_id, secret_access_key, session_token)
+      end
+      @client = Aws::Glue::Client.new(client_params)
     end
 
     def fetch(id)
@@ -43,12 +39,26 @@ class AvroTurf
     end
 
     def register(subject, schema)
-      raise NotImplementedError
+      resp = client.create_schema(
+        {
+          registry_id: {
+            registry_name: @registry_name,
+          },
+          schema_name: subject,
+          data_format: "AVRO",
+          compatibility: "BACKWARD",
+          schema_definition: schema,
+        })
+      resp.schema_version_id
     end
 
     # Check if a schema exists. Returns nil if not found.
     def check(subject, schema)
-      raise NotImplementedError
+      resp = @client.get_schema({ schema_id: {
+        schema_name: subject,
+        registry_name: @registry_name
+      } })
+      resp.data
     end
   end
 end
