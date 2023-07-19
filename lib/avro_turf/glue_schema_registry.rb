@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'aws-sdk-glue'
+require "aws-sdk-glue"
 
 class AvroTurf
   class GlueSchemaRegistry
@@ -12,7 +12,7 @@ class AvroTurf
       region: nil
     )
       @registry_name = registry_name
-      client_params = { region: region }
+      client_params = {region: region}
       if access_key_id && secret_access_key && session_token
         client_params[:credentials] = Aws::Credentials.new(access_key_id, secret_access_key, session_token)
       end
@@ -20,7 +20,7 @@ class AvroTurf
     end
 
     def fetch(id)
-      res = @client.get_schema_version({ schema_version_id: id })
+      res = @client.get_schema_version({schema_version_id: id})
       res.schema_definition
     end
 
@@ -30,10 +30,10 @@ class AvroTurf
           {
             schema_id: {
               schema_name: schema_name,
-              registry_name: @registry_name,
+              registry_name: @registry_name
             },
-            schema_definition: schema.to_s,
-          },
+            schema_definition: schema.to_s
+          }
         )
       res.schema_version_id
     end
@@ -42,22 +42,23 @@ class AvroTurf
       resp = client.create_schema(
         {
           registry_id: {
-            registry_name: @registry_name,
+            registry_name: @registry_name
           },
           schema_name: subject,
           data_format: "AVRO",
           compatibility: "BACKWARD",
-          schema_definition: schema,
-        })
+          schema_definition: schema
+        }
+      )
       resp.schema_version_id
     end
 
     # Check if a schema exists. Returns nil if not found.
     def check(subject, schema)
-      resp = @client.get_schema({ schema_id: {
+      resp = @client.get_schema({schema_id: {
         schema_name: subject,
         registry_name: @registry_name
-      } })
+      }})
       resp.data
     end
   end

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require 'avro_turf'
-require 'avro_turf/glue_schema_registry'
+require "avro_turf"
+require "avro_turf/glue_schema_registry"
 
 class AvroTurf
   class GlueMessaging
-    MAGIC_BYTE = [3].pack('C').freeze
-    COMPRESSION_ENABLED_BYTE = [5].pack('C').freeze
-    COMPRESSION_DISABLED_BYTE = [0].pack('C').freeze
+    MAGIC_BYTE = [3].pack("C").freeze
+    COMPRESSION_ENABLED_BYTE = [5].pack("C").freeze
+    COMPRESSION_DISABLED_BYTE = [0].pack("C").freeze
 
     class DecodedMessage
       attr_reader :schema_id, :message
@@ -70,8 +70,8 @@ class AvroTurf
           fetch_schema_by_definition(writers_schema, schema_name)
         else
           raise ArgumentError.new(
-                  'Neither schema_name nor schema_id nor schema_name + schema definition provided to determine the schema.',
-                )
+            "Neither schema_name nor schema_id nor schema_name + schema definition provided to determine the schema."
+          )
         end
 
       if validate
@@ -80,7 +80,7 @@ class AvroTurf
           message,
           recursive: true,
           encoded: false,
-          fail_on_extra_fields: true,
+          fail_on_extra_fields: true
         )
       end
 
@@ -99,7 +99,7 @@ class AvroTurf
       encoder.write(COMPRESSION_DISABLED_BYTE)
 
       # The schema id is encoded as a 32-bit hex string.
-      encoder.write([schema_id.gsub('-', '')].pack('H*'))
+      encoder.write([schema_id.delete("-")].pack("H*"))
 
       # The actual message comes last.
       writer.write(message, encoder)
@@ -138,7 +138,7 @@ class AvroTurf
 
       # The schema id is a 32-bit hex string.
       schema_id =
-        decoder.read(16).unpack1('H*').sub(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '\1-\2-\3-\4-\5')
+        decoder.read(16).unpack1("H*").sub(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '\1-\2-\3-\4-\5')
 
       writers_schema =
         @schemas_by_id.fetch(schema_id) do
@@ -150,7 +150,7 @@ class AvroTurf
       message = reader.read(decoder)
 
       if compression_byte == COMPRESSION_ENABLED_BYTE
-        p 'Do some decompression here'
+        p "Do some decompression here"
       elsif compression_byte != COMPRESSION_DISABLED_BYTE
         raise "Compression byte is not recognized, got `#{compression_byte.inspect}`"
       end
