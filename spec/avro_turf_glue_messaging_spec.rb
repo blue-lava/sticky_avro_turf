@@ -4,14 +4,11 @@ RSpec.describe AvroTurf::GlueMessaging do
   let(:avro) do
     AvroTurf::GlueMessaging.new(
       registry_name: "registry-name",
-      access_key_id: "test-access-key",
-      secret_access_key: "test-secret",
-      session_token: "test-token",
-      region: "us-east-1",
-      schemas_path: "spec/schemas"
+      schemas_path: "spec/schemas",
+      client: Aws::Glue::Client.new(stub_responses: true)
     )
   end
-  let(:stub_client) { Aws::Glue::Client.new(stub_responses: true) }
+  let(:stub_client) { avro.client }
 
   let(:address_schema_name) { "address" }
   let(:person_schema_name) { "person" }
@@ -20,8 +17,6 @@ RSpec.describe AvroTurf::GlueMessaging do
   let(:address) { {"street" => "55 University Ave", "city" => "Toronto"} }
   let(:person1) { {"full_name" => "John Doe", "address" => address} }
   let(:person2) { {"full_name" => "Jane Doe", "address" => address} }
-
-  before { expect(Aws::Glue::Client).to receive(:new).and_return(stub_client) }
 
   it "encodes and decodes messages" do
     stub_client.stub_responses(

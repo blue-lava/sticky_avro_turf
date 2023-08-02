@@ -18,32 +18,29 @@ class AvroTurf
       end
     end
 
+    attr_reader :schema_store
+    attr_reader :client
+    attr_reader :registry
+    attr_accessor :schemas_by_id
+
     # Instantiate a new Messaging instance with the given configuration.
     #
     # schema_store         - A schema store object that responds to #find(schema_name, namespace).
     # schemas_path         - The String file system path where local schemas are stored.
     # registry_name
-    # access_key_id
-    # secret_access_key
-    # session_token
-    # region
+    # client
     def initialize(
       registry_name: nil,
-      access_key_id: nil,
-      secret_access_key: nil,
-      session_token: nil,
-      region: nil,
       schema_store: nil,
-      schemas_path: nil
+      schemas_path: nil,
+      client: Aws::Glue::Client.new
     )
       @schema_store = schema_store || SchemaStore.new(path: schemas_path || DEFAULT_SCHEMAS_PATH)
+      @client = client
       @registry =
         AvroTurf::GlueSchemaRegistry.new(
           registry_name: registry_name,
-          region: region,
-          access_key_id: access_key_id,
-          secret_access_key: secret_access_key,
-          session_token: session_token
+          client: client
         )
       @schemas_by_id = {}
     end
@@ -62,7 +59,7 @@ class AvroTurf
     #
     # Returns the encoded data as a String.
     def encode(message, schema_name: nil, schema_id: nil, validate: true)
-      writers_schema = @schema_store.find(schema_name)
+      writers_schema = schema_store.find(schema_name)
       schema, schema_id =
         if schema_id
           fetch_schema_by_id(schema_id)
@@ -141,9 +138,9 @@ class AvroTurf
         decoder.read(16).unpack1("H*").sub(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '\1-\2-\3-\4-\5')
 
       writers_schema =
-        @schemas_by_id.fetch(schema_id) do
+        schemas_by_id.fetch(schema_id) do
           schema, schema_id = fetch_schema_by_id(schema_id)
-          @schemas_by_id[schema_id] = schema
+          schemas_by_id[schema_id] = schema
         end
 
       reader = Avro::IO::DatumReader.new(writers_schema, nil)
@@ -161,22 +158,22 @@ class AvroTurf
     # Fetch the schema from registry with the provided schema_id.
     def fetch_schema_by_id(schema_id)
       schema =
-        @schemas_by_id.fetch(schema_id) do
-          schema_json = @registry.fetch(schema_id)
+        schemas_by_id.fetch(schema_id) do
+          schema_json = registry.fetch(schema_id)
           Avro::Schema.parse(schema_json)
         end
       [schema, schema_id]
     end
 
     def fetch_schema_by_definition(schema, subject)
-      schema_id = @registry.fetch_by_definition(subject, schema)
+      schema_id = registry.fetch_by_definition(subject, schema)
       [schema, schema_id]
     end
 
     # Schemas are registered under the full name of the top level Avro record
     # type, or `subject` if it's provided.
     def register_schema(schema_name:, subject: nil)
-      raise NotImplementedError
+      registry.register(schema_name, subject)
     end
   end
 end
